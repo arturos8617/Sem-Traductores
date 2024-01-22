@@ -23,6 +23,10 @@ Cada token identificado se asocia con un valor numérico específico que se util
 
 Para utilizar el analizador léxico, simplemente se necesita instanciar la clase `Lexer` y llamar al método `tokenize` con una cadena de código fuente como argumento. El método devuelve una lista de tokens identificados con su tipo numérico correspondiente.
 
+# Ejemplo de uso
+La variable "code" es la que se analizara por lo tanto el texto almacenada en ella. Este es un ejemplo de uso con esta sentencia "if (a >= .5) { int x = y + 2; } else { x = x - 1; } $"
+![image](https://github.com/arturos8617/Sem-Traductores/assets/71295425/cc288088-a15a-4c70-86ab-f9504ec0a616)
+
 ```python
 lexer = Lexer()
 code = "if (a >= 3.5) { int x = y + 2; }"
