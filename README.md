@@ -21,7 +21,8 @@ Escribe el código Python que deseas visualizar en un archivo de texto y guárda
 Ejecuta el script:
 
 Ejecuta el script visualize_ast.py con la ruta de tu archivo de código Python como argumento:
-```python python visualize_ast.py path_to_your_file.txt
+```python 
+visualize_ast.py path_to_your_file.txt
 ```
 
 El script leerá el código fuente y generará un diagrama del árbol sintáctico.
