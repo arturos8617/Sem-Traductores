@@ -12,15 +12,17 @@ Para instalar las dependencias del programa, ejecuta el siguiente comando:
 
 ```bash
 pip install graphviz
+```
 
-#Para usar el programa, sigue estos pasos:
+##Para usar el programa, sigue estos pasos:
 
 Prepara tu archivo de código Python:
 Escribe el código Python que deseas visualizar en un archivo de texto y guárdalo con la extensión .txt.
 Ejecuta el script:
 
 Ejecuta el script visualize_ast.py con la ruta de tu archivo de código Python como argumento:
-python visualize_ast.py path_to_your_file.txt
+```python python visualize_ast.py path_to_your_file.txt
+```
 
 El script leerá el código fuente y generará un diagrama del árbol sintáctico.
 Ver el resultado:
