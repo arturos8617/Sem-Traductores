@@ -1,6 +1,9 @@
 import ply.yacc as yacc
 
 from analizadorLexico import tokens
+from analizadorSemantico import SymbolTable
+
+symbol_table = SymbolTable()
 
 precedence = (
     ('left', 'SUMA', 'RESTA'),
@@ -30,10 +33,16 @@ def p_declaration(p):
 def p_var_declaration(p):
     '''var_declaration : type_specifier IDENTIFICADOR PUNTOYCOMA
                        | type_specifier IDENTIFICADOR ASIGNACION expression PUNTOYCOMA'''
-    if len(p) == 4:
-        p[0] = ('var_decl', p[1], p[2])  # Solo declaración
-    elif len(p) == 6:
-        p[0] = ('var_decl', p[1], p[2], p[4])  # Declaración con inicialización
+    symbol_table.enter_scope()
+    try:
+        if len(p) == 4:
+            symbol_table.declare(p[2], {'type': p[1], 'initialized': False})
+            p[0] = ('var_decl', p[1], p[2])
+        elif len(p) == 6:
+            symbol_table.declare(p[2], {'type': p[1], 'initialized': True})
+            p[0] = ('var_decl', p[1], p[2], p[4])
+    finally:
+        symbol_table.exit_scope()
 
 
 
@@ -45,6 +54,7 @@ def p_type_specifier(p):
 
 def p_fun_declaration(p):
     'fun_declaration : type_specifier IDENTIFICADOR LPAREN param_list RPAREN compound_statement'
+    symbol_table.declare(p[2], {'type': 'function', 'return_type': p[1], 'parameters': p[4]})
     p[0] = ('fun_decl', p[1], p[2], p[4], p[6])
 
 
@@ -67,6 +77,7 @@ def p_param(p):
 
 def p_class_declaration(p):
     'class_declaration : CLASS IDENTIFICADOR LBRACE declaration_list RBRACE'
+    symbol_table.declare(p[2], {'type': 'class', 'members': p[4]})
     p[0] = ('class_decl', p[2], p[4])
 
 def p_compound_statement(p):
@@ -194,3 +205,4 @@ def p_error(p):
 
 
 parser = yacc.yacc()
+
