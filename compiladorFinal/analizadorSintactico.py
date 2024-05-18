@@ -1,5 +1,4 @@
 import ply.yacc as yacc
-
 from analizadorLexico import tokens
 from analizadorSemantico import SymbolTable
 
@@ -9,7 +8,6 @@ precedence = (
     ('left', 'SUMA', 'RESTA'),
     ('left', 'MULTIPLICACION', 'DIVISION'),
 )
-
 
 def p_program(p):
     'program : declaration_list'
@@ -23,7 +21,6 @@ def p_declaration_list(p):
     else:
         p[0] = []
 
-
 def p_declaration(p):
     '''declaration : var_declaration
                    | fun_declaration
@@ -33,18 +30,10 @@ def p_declaration(p):
 def p_var_declaration(p):
     '''var_declaration : type_specifier IDENTIFICADOR PUNTOYCOMA
                        | type_specifier IDENTIFICADOR ASIGNACION expression PUNTOYCOMA'''
-    symbol_table.enter_scope()
-    try:
-        if len(p) == 4:
-            symbol_table.declare(p[2], {'type': p[1], 'initialized': False})
-            p[0] = ('var_decl', p[1], p[2])
-        elif len(p) == 6:
-            symbol_table.declare(p[2], {'type': p[1], 'initialized': True})
-            p[0] = ('var_decl', p[1], p[2], p[4])
-    finally:
-        symbol_table.exit_scope()
-
-
+    if len(p) == 4:
+        p[0] = ('var_decl', p[1], p[2])
+    elif len(p) == 6:
+        p[0] = ('var_decl', p[1], p[2], p[4])
 
 def p_type_specifier(p):
     '''type_specifier : INT
@@ -54,22 +43,18 @@ def p_type_specifier(p):
 
 def p_fun_declaration(p):
     'fun_declaration : type_specifier IDENTIFICADOR LPAREN param_list RPAREN compound_statement'
-    symbol_table.declare(p[2], {'type': 'function', 'return_type': p[1], 'parameters': p[4]})
     p[0] = ('fun_decl', p[1], p[2], p[4], p[6])
-
 
 def p_param_list(p):
     '''param_list : param_list COMA param
                   | param
                   | empty'''
     if len(p) == 4:
-        p[0] = p[1]
-        p[0].append(p[3])
+        p[0] = p[1] + [p[3]]
     elif len(p) == 2:
         p[0] = [p[1]]
     else:
         p[0] = []
-
 
 def p_param(p):
     'param : type_specifier IDENTIFICADOR'
@@ -77,36 +62,29 @@ def p_param(p):
 
 def p_class_declaration(p):
     'class_declaration : CLASS IDENTIFICADOR LBRACE declaration_list RBRACE'
-    symbol_table.declare(p[2], {'type': 'class', 'members': p[4]})
     p[0] = ('class_decl', p[2], p[4])
 
 def p_compound_statement(p):
     'compound_statement : LBRACE statement_list RBRACE'
-    p[0] = p[2]
+    p[0] = ('compound_stmt', p[2])
 
 def p_statement_list(p):
     '''statement_list : statement_list statement
                       | empty'''
     if len(p) == 3:
-        if p[1] is None:
-            p[0] = [p[2]]
-        else:
-            p[0] = p[1]
-            p[0].append(p[2])
+        p[0] = p[1] + [p[2]]
     else:
         p[0] = []
 
-
-
 def p_statement(p):
-    '''statement : var_declaration
+    '''statement : declaration
+                 | var_declaration
                  | expression_statement
                  | compound_statement
                  | selection_statement
                  | iteration_statement
                  | return_statement'''
     p[0] = p[1]
-
 
 def p_expression_statement(p):
     'expression_statement : expression PUNTOYCOMA'
@@ -120,15 +98,13 @@ def p_selection_statement(p):
     else:
         p[0] = ('if_else', p[3], p[5], p[7])
 
-
 def p_iteration_statement(p):
     '''iteration_statement : WHILE LPAREN expression RPAREN statement
                            | FOR LPAREN expression_statement expression_statement expression RPAREN statement'''
-    if len(p) == 7:
+    if len(p) == 6:
         p[0] = ('while', p[3], p[5])
     else:
         p[0] = ('for', p[3], p[4], p[5], p[7])
-
 
 def p_return_statement(p):
     'return_statement : RETURN expression PUNTOYCOMA'
@@ -138,22 +114,20 @@ def p_expression(p):
     '''expression : simple_expression
                   | IDENTIFICADOR ASIGNACION expression
                   | IDENTIFICADOR DOT IDENTIFICADOR
-                  | IDENTIFICADOR DOT IDENTIFICADOR LPAREN arg_list RPAREN'''  # Agregado para llamadas a métodos
+                  | IDENTIFICADOR DOT IDENTIFICADOR LPAREN arg_list RPAREN'''
     if len(p) == 4:
         if p[2] == '=':
             p[0] = ('assign', p[1], p[3])
         else:
-            p[0] = ('access_member', p[1], p[3])  # Acceso a propiedad
+            p[0] = ('access_member', p[1], p[3])
     elif len(p) == 2:
-        p[0] = p[1]  # Solo identificador
+        p[0] = p[1]
     elif len(p) == 6:
-        # Manejo de llamadas a métodos con argumentos
         p[0] = ('method_call', p[1], p[3], p[5])
-
-
 
 def p_simple_expression(p):
     '''simple_expression : simple_expression SUMA term
+                         | simple_expression RESTA term
                          | term'''
     if len(p) == 4:
         p[0] = ('binop', p[1], p[2], p[3])
@@ -161,11 +135,28 @@ def p_simple_expression(p):
         p[0] = p[1]
 
 def p_term(p):
-    '''term : IDENTIFICADOR
-            | ENTERO
-            | REAL
-            | call'''
-    p[0] = p[1]
+    '''term : term MULTIPLICACION factor
+            | term DIVISION factor
+            | factor'''
+    if len(p) == 4:
+        p[0] = ('binop', p[1], p[2], p[3])
+    else:
+        p[0] = p[1]
+
+def p_factor(p):
+    '''factor : IDENTIFICADOR
+              | ENTERO
+              | REAL
+              | LPAREN expression RPAREN'''
+    if len(p) == 2:
+        if isinstance(p[1], int) or isinstance(p[1], float):
+            p[0] = ('number', p[1])
+        elif isinstance(p[1], str):
+            p[0] = ('var', p[1])
+        else:
+            p[0] = p[1]
+    else:
+        p[0] = p[2]
 
 def p_call(p):
     'call : IDENTIFICADOR LPAREN arg_list RPAREN'
@@ -176,21 +167,15 @@ def p_arg_list(p):
                 | expression
                 | empty'''
     if len(p) == 4:
-        if p[1] is None:
-            p[0] = [p[3]]
-        else:
-            p[0] = p[1]
-            p[0].append(p[3])
+        p[0] = p[1] + [p[3]]
     elif len(p) == 2:
         p[0] = [p[1]]
     else:
         p[0] = []
 
-
 def p_empty(p):
     'empty :'
-    p[0] = None  # Asegúrate de que esta definición se alinea con tus expectativas
-
+    p[0] = None
 
 def p_access_member(p):
     'access_member : IDENTIFICADOR DOT IDENTIFICADOR'
@@ -202,7 +187,4 @@ def p_error(p):
     else:
         print("Syntax error at EOF")
 
-
-
 parser = yacc.yacc()
-
