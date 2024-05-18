@@ -1,4 +1,5 @@
-Mi Compilador
+#Mi Compilador#
+
 Este proyecto es un compilador que traduce un lenguaje de programación personalizado a código Python. El compilador realiza análisis léxico, sintáctico y semántico, y genera un archivo Python que puede ser ejecutado o convertido a un ejecutable.
 
 Características
